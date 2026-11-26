@@ -10,6 +10,7 @@
 - 砖垛孔形实测 `brick_stacks`，字段为 `origin`（拆建凭单）、`length`（单砖长 mm）、`perforation`（孔隙比）、`wet`（含湿率 %）、`weighed`（水分复检）、`pieces`（砖数）、`merged`（已合垛）。模型约束位于 `backend/domain/brick_stacks_model.py`，规则位于 `brick_stacks_service.py`。
 - 货架分簇候选 `rack_candidates`，字段为 `member`（试配砖垛）、`pair`（同组砖垛）、`cluster_size`（同簇总垛数）、`token`（计算号）。模型约束位于 `backend/domain/rack_candidates_model.py`，规则位于 `rack_candidates_service.py`。
 - 合垛货架卡 `rack_merges`，字段为 `candidate`（参考候选）、`rack`（保全货架）、`pieces`（合计砖数）、`operator_note`（交接标签）。模型约束位于 `backend/domain/rack_merges_model.py`，规则位于 `rack_merges_service.py`。
+- 分簇规则 `cluster_rules`，字段为 `version`（版本）、`threshold`（距离门槛）、`state`（`current`/`pending`/`retired`/`superseded`）。盲测记录 `cluster_evaluations` 保存选取卡、两侧门槛与逐用途同簇占比。模型位于 `backend/domain/cluster_rules_model.py`，规则位于 `cluster_rules_service.py`。
 
 团队为模拟的11 人保全砖材班，负责拆建回收物登记与合垛。
 
@@ -52,10 +53,20 @@ Compose 运行 Nginx、Python FastAPI、独立 Redis 消费进程、SQL 数据�
 |---|---|---|
 | 拆建来源凭单 | `/demolitions` /demolitions/confirm-release | `frontend/src/pages/demolitions.js` |
 | 砖垛孔形实测 | `/brick_stacks` /brick_stacks/survey-stack，/brick_stacks/confirm-moisture | `frontend/src/pages/brick_stacks.js` |
+| 分簇规则发布 | `/cluster_rules` /cluster_rules/propose，/cluster_rules/evaluate，/cluster_rules/publish | `frontend/src/pages/cluster_rules.js` |
+| 门槛盲测记录 | `/cluster_evaluations` | `frontend/src/pages/cluster_evaluations.js` |
 | 货架分簇候选 | `/rack_candidates` /rack_candidates/suggest-pair，/rack_candidates/record-candidate | `frontend/src/pages/rack_candidates.js` |
 | 合垛货架卡 | `/rack_merges` /rack_merges/pack-rack | `frontend/src/pages/rack_merges.js` |
 
 SQL 实体与约束在 `backend/domain` 下维护。前端使用原生 ES modules。核心算子为 Birch。在孔隙比和砖长标准化空间逐批更新 BIRCH 子簇，返回当前同簇最邻近参考垛。
+
+### 分簇门槛的盲测与发布
+
+- 复核员提出待发布门槛后，从已签货架卡中挑卡做盲测；卡上的两个砖垛不进入拟合，新旧门槛用同一批训练垛。
+- 盲测按用途逐项校验：任一用途缺卡、训练垛不足六个，或该用途同簇货架卡占比低于旧版，整次盲测即不通过，不能发布。
+- 现有用途以已放行来源的砖垛为准；某个用途没有已签货架卡时该用途不通过。
+- 试配在接单时把当时的门槛与版本写入计算输入，worker 只按输入计算。发布与试配并发时，已接单的试配沿用接单时的版本，发布成功后新接的单才用新版。
+- 发布时校验盲测记录仍对应当前现用与待发布规则；任一门槛变化都须重新盲测。发布失败（含门槛已变或盲测未通过）保留旧版。
 
 模拟读数与审查范围仅用于保全操作演练。现有库存通过内置种子初始化。
 

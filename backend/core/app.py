@@ -15,7 +15,9 @@ from scripts.seed_demo import seed
 @asynccontextmanager
 async def lifespan(app):
     from core.db import engine
+    from domain.cluster_rules_service import ensure_default_rule
     metadata.create_all(engine)
+    ensure_default_rule()
     if SEED_DEMO:
         try:
             seed()

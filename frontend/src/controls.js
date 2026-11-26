@@ -1,9 +1,10 @@
 import {awaitCompute, request} from './api.js';
 import {el, display} from './dom.js';
-import {COMPUTE_STATES, evidence} from './store.js';
+import {COMPUTE_STATES, evidence, slots} from './store.js';
 import {status} from './widgets.js';
 
-const fallback = field => field.kind === 'token' ? evidence.get() : field.initial;
+const fallback = field => field.kind === 'token' ? evidence.get()
+  : field.kind === 'slot' ? slots.get(field.name) : field.initial;
 function input(field) {
   if (field.kind === 'bool') return el('select', {name:field.name},
     el('option',{value:'true', selected:fallback(field) === true ? '' : undefined},'是'),
@@ -44,7 +45,10 @@ export function actionForm(action, refresh) {
         if (result.status === 'rejected') throw new Error(result.detail);
         notice.textContent = '任务 ' + data.token + ' · ' + display(result.result);
       } else {
-        notice.textContent = action.success + ' · ' + display(data.code ?? data.status);
+        if (action.remember && data.code) slots.save(action.remember, data.code);
+        const passed = data.passed === false ? '未通过' : data.passed === true ? '通过' : null;
+        notice.textContent = action.success + ' · ' + display(data.code ?? data.status)
+          + (passed ? ' · 盲测' + passed : '');
       }
       notice.classList.add('ok');
       await refresh();

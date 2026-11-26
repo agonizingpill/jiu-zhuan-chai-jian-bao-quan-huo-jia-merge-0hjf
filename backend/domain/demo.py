@@ -1,9 +1,18 @@
+from datetime import datetime, timezone
+
 from domain.demolitions_model import demolitions
 from domain.brick_stacks_model import brick_stacks
+from domain.cluster_rules_model import cluster_evaluations, cluster_rules
 from domain.rack_candidates_model import rack_candidates
 from domain.rack_merges_model import rack_merges
 
 FIXTURES = [
+    (cluster_rules, [{'code': 'RULE-1',
+  'version': 1,
+  'threshold': 0.25,
+  'state': 'current',
+  'created_by': 'system',
+  'created_at': datetime(2026, 1, 1, tzinfo=timezone.utc)}]),
     (demolitions, [{'code': 'DEMO-K',
   'street': '西汀渡口旧房',
   'survey': 'SX-431',
@@ -258,10 +267,20 @@ FIXTURES = [
   'member': 'BR-00',
   'pair': 'BR-06',
   'cluster_size': 5,
-  'token': 'c-seed'}]),
+  'token': 'c-seed'},
+ {'code': 'COMP-2',
+  'member': 'BR-01',
+  'pair': 'BR-13',
+  'cluster_size': 5,
+  'token': 'c-seed-2'}]),
     (rack_merges, [{'code': 'PACK-0',
   'candidate': 'COMP-1',
   'rack': 'X-7',
   'pieces': 36,
-  'operator_note': '备样教学架'}]),
+  'operator_note': '备样教学架'},
+ {'code': 'PACK-1',
+  'candidate': 'COMP-2',
+  'rack': 'X-9',
+  'pieces': 44,
+  'operator_note': '墙芯备样架'}]),
 ]

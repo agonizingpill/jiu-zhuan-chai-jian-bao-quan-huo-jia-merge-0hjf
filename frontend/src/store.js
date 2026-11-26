@@ -11,3 +11,7 @@ export const evidence = {
   get: () => sessionStorage.getItem('latest-computation') || '',
   save: token => sessionStorage.setItem('latest-computation', token)
 };
+export const slots = {
+  get: key => sessionStorage.getItem('slot:' + key) || '',
+  save: (key, value) => sessionStorage.setItem('slot:' + key, value)
+};
